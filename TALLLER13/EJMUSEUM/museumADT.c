@@ -1,6 +1,7 @@
 #include "museumADT.h"
 
 #include <assert.h>
+#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,12 +18,12 @@ typedef struct person {
 typedef struct dia {
     tPerson * first;
     int cantpersons;
+    tPerson * actualperson;
 }tDia;
 
 struct museumTicketCDT {
     tDia dias[CANT_DIAS];
     int ticketsyear;
-    tDia * actualyear;
 };
 
 
@@ -32,6 +33,7 @@ museumTicketADT newMuseumTicket(void) {
 
 static tPerson * addTicketRec(tPerson * l,const char *visitor, char *yavisito) {
     int cmp;
+
     if(l == NULL || (cmp = strcmp(l->nombre,visitor)) > 0) {
         tPerson *newPerson = malloc(sizeof(tPerson));
         newPerson->nombre = visitor;
@@ -55,6 +57,7 @@ int addTicket(museumTicketADT museumTicketADT, size_t dayOfYear, const char *vis
     if(yavisito == 1) {
         return 0;
     }
+    museumTicketADT->ticketsyear++;
     return museumTicketADT->dias[dayOfYear-1].cantpersons+=1;
 }
 
@@ -70,12 +73,27 @@ int yearTickets(const museumTicketADT museumTicketADT) {
 }
 
 void toBeginByDay(museumTicketADT museumTicketADT, size_t dayOfYear) {
-    assert(invalidDayOfYear(dayOfYear)!=0);
+    assert(invalidDayOfYear(dayOfYear)==0);
+    museumTicketADT->dias[dayOfYear-1].actualperson = museumTicketADT->dias[dayOfYear-1].first;
+}
 
+size_t hasNextByDay(museumTicketADT museumTicketADT, size_t dayOfYear) {
+    return (museumTicketADT->dias[dayOfYear-1].actualperson != NULL);
+}
+
+char * nextByDayRec(tDia l) {
+    char * nombre = l.actualperson->nombre;
+    return nombre;
+}
+
+char * nextByDay(museumTicketADT museumTicketADT, size_t dayOfYear) {
+    char *nombre = nextByDayRec(museumTicketADT->dias[dayOfYear-1]);
+    museumTicketADT->dias[dayOfYear-1].actualperson = museumTicketADT->dias[dayOfYear-1].actualperson->nextperson;
+    return nombre;
 }
 
 void freePersonPerDay(tPerson *persona) {
-    if(persona->nombre == NULL) {
+    if(persona == NULL) {
         return;
     }
     freePersonPerDay(persona->nextperson);
