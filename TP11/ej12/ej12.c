@@ -1,88 +1,68 @@
+#include "ej12ADT.h"
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 #include <stdio.h>
-#include "ej13ADT.h"
 
-// Utilizamos const char * como elemType y strcmp como compare
+int main (void) {
+	socialADT soc = newSocial();
+	char ** rel;
+	rel = persons(soc); // rel = {NULL}
+	assert( rel[0] == 0 );
+	free(rel);
 
-int main(void) {
-  rankingADT r = newRanking(NULL, 0, strcmp);
-  addRanking(r, "Footloose");
-  addRanking(r, "Footloose");  // no hace nada
-  addRanking(r, "Footloose");  // no hace nada
-  addRanking(r, "Yesterday");
-  addRanking(r, "La bamba");
-  addRanking(r, "Sucio y desprolijo");
-  addRanking(r, "Ride of the Valkyries");
-  addRanking(r, "Yesterday");
-  addRanking(r, "Ride of the Valkyries");
+	rel = related(soc, "carlitos"); // rel = {NULL};
+	assert( rel[0] == NULL );
+	free(rel);
 
-  const char * aux = "default";
-  int n;
-  n = getByRanking(r, 6, &aux);
-  assert( n == 0 && !strcmp(aux, "default") );
+	char aux[30] = "juan";
+	addPerson(soc, aux); // soc contiene a "juan"
+	strcpy(aux,"luisa");
+	addPerson(soc, aux); // soc contiene a "juan" y "luisa"
+	strcpy(aux,"ana");
+	addRelated(soc, "juan", "pedro");
+	addRelated(soc, "juan", aux);
+	addRelated(soc, "juan", "juana");
+	char ** juanFriends = related(soc, "juan"); // juanFriends es {"ana", "juana", "pedro", NULL};
+	assert( !strcmp(juanFriends[0], "ana") && !strcmp(juanFriends[1], "juana"));
+	assert( !strcmp(juanFriends[2], "pedro") && juanFriends[3] == NULL );
+	for(int i=0; juanFriends[i] != NULL; i++)
+		free(juanFriends[i]);
+	free(juanFriends);
 
-  n = getByRanking(r, 1, &aux);
-  assert( n == 1 && !strcmp(aux, "Yesterday") );
+	addPerson(soc, "andres");
+	addPerson(soc, "analia");
+	char **p = persons(soc); // p={"analia","andres","juan","luisa",NULL}
+	assert( !strcmp(p[0], "analia") && !strcmp(p[1], "andres"));
+	assert( !strcmp(p[2], "juan") && !strcmp(p[3], "luisa") && p[4] == NULL );
+	for(int i=0; p[i] != NULL; i++)
+		free(p[i]);
+	free(p);
 
-  n = getByRanking(r, 0, &aux);
-  assert( n == 0 && !strcmp(aux, "Yesterday") );
+	addRelated(soc, "juan", "john"); // Ahora los amigos de juan son "ana", "john", "juana" y "pedro"
+	addRelated(soc, "juan", "john"); // Ahora los amigos de juan son "ana", "john", "john", juana" y "pedro"
+	juanFriends = related( soc, "juan" );
+	assert( !strcmp(juanFriends[0], "ana") && !strcmp(juanFriends[1], "john") && !strcmp(juanFriends[2], "john"));
+	assert( !strcmp(juanFriends[3], "juana") && !strcmp(juanFriends[4], "pedro") && juanFriends[5] == NULL);
+	for(int i=0; juanFriends[i] != NULL; i++)
+		free(juanFriends[i]);
+	free(juanFriends);
 
-  n = getByRanking(r, 2, &aux);
-  assert( n == 1 && !strcmp(aux, "Footloose") );
+	freeSocial(soc);
+	puts("OK!");
 
-  n = getByRanking(r, 1, &aux);
-  assert( n == 1 && !strcmp(aux, "Footloose") );
+	// El enunciado decía que a lo sumo eran 20 chars lo que tenía cada nombre
+	// Pero si el TAD aplica programación defensiva no debería causar problemas el pasarle un
+	// nombre de mayor longitud, a lo sumo podría cortarlo.
+    soc = newSocial();
+    addPerson(soc, "012345678901234567890123456789");
+    p = persons(soc);
+    assert(!strncmp(p[0],"01234567890123456789", 20 ));
+    for(int i=0; p[i] != NULL; i++)
+		free(p[i]);
+	free(p);
+    freeSocial(soc);
 
-  assert( contains(r, "Ride of the Valkyries") );
-  assert( contains(r, "Sucio y desprolijo") );
-  assert( contains(r, "Desarma y sangra") == 0 );
-
-  size_t dimTop = 10;
-  char ** top = getTopRanking(r, &dimTop);
-  assert(dimTop == 5 && !strcmp(top[0], "Footloose") && !strcmp(top[1], "Yesterday"));
-  assert(!strcmp(top[2], "Ride of the Valkyries") && !strcmp(top[3], "Sucio y desprolijo"));
-  assert(strcmp(top[4], "La bamba") == 0);
-  free(top);
-
-  downByRanking(r, 1);
-  dimTop = 2;
-  top = getTopRanking(r, &dimTop);
-  assert( dimTop == 2 && !strcmp(top[0], "Yesterday") && !strcmp(top[1], "Footloose") );
-
-  free(top);
-  freeRanking(r);
-
-  // Creamos un ranking con miles de elementos
-  int qty = 5000;
-  char * songs[qty];
-
-  for(int i=0; i<qty; i++) {
-	  songs[i] = malloc(100);
-	  sprintf(songs[i], "Cancion %04d", i+1);
-  }
-  r = newRanking(songs, qty, strcmp);
-  assert(size(r)==qty);
-
-  assert(position(r, "Cancion 0001")==1);
-  assert(position(r, "Cancion 4500")==4500);
-
-  assert( contains(r, "Cancion 0001") );
-  assert(position(r, "Cancion 0001")==1);
-  assert( contains(r, "Cancion 1234") );
-  assert(position(r, "Cancion 1234")==1233);
-  assert(position(r, "Cancion 1233")==1234);
-  assert(position(r, "Cancion 5000")==5000);
-  assert(position(r, "Cancion xxx")==0);
-  assert(size(r)==qty);
-
-
-  for(int i=0; i<qty; i++) {
-	  free(songs[i]);
-  }
-  freeRanking(r);
-
-  puts("rankingADT: OK!");
-  return 0;
+	puts("Great!");
+	return 0;
 }
